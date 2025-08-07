@@ -10,11 +10,16 @@ public class GenerateCodeService(
     private readonly IDiscountCodeRepository _repository = repository;
     private readonly ICodeGenerator _generator = generator;
 
-    public async Task<GenerateCodeResultDTO> GenerateCodesAsync(ushort count)
+    public async Task<GenerateCodeResultDTO> GenerateCodesAsync(ushort count, byte length)
     {
         if (count < 1000 || count > 2000)
         {
             throw new ArgumentException("Invalid count range. Select from 1000 to 2000");
+        }
+
+        if (length < 7 || length > 8) 
+        {
+            throw new ArgumentException("Invalid length. Select from 7 to 8");
         }
 
         var existingCodes = await _repository.GetAllCodesAsync();
@@ -27,7 +32,7 @@ public class GenerateCodeService(
 
         while (newCodes.Count < count)
         {
-            var candidateCode = _generator.Generate(8);
+            var candidateCode = _generator.Generate(length);
 
             if (!usedCodes.Contains(candidateCode) && !newCodes.Contains(candidateCode))
             {
@@ -56,13 +61,5 @@ public class GenerateCodeService(
         return new() { Codes = newCodes };
     }
 
-    public async Task<UseCodeResultDTO> UseCodeAsync(string code)
-    {
-        var success = await _repository.MarkCodeAsUsedAsync(code);
-
-        return new UseCodeResultDTO
-        {
-            Result = success
-        };
-    }
+    public async Task<UseCodeResultDTO> UseCodeAsync(string code) => await _repository.MarkCodeAsUsedAsync(code);
 }

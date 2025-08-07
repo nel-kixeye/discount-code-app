@@ -3,25 +3,21 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 Console.WriteLine("Starting Discount Code Client...");
 
-// Connect to the hub
 var connection = new HubConnectionBuilder()
-    .WithUrl("http://localhost:5160/discount") // Change this to your backend URL
+    .WithUrl("http://localhost:5160/discount") // Update this to match your backend
     .WithAutomaticReconnect()
     .Build();
 
-// Receive handler for generated codes
-connection.On<GenerateCodeResultDTO>("ReceiveGeneratedCodes", codes =>
+connection.On<bool>("ReceiveGeneratedCodes", result =>
 {
-    var unpacked = codes.Codes;
-    Console.WriteLine("Generated Codes:");
-    foreach (var code in unpacked)
-        Console.WriteLine($"- {code}");
+    Console.WriteLine(result
+        ? "Code generation succeeded."
+        : "Code generation failed.");
 });
 
-// Receive handler for use code result
-connection.On<UseCodeResultDTO>("ReceiveUseCodeResult", result =>
+connection.On<byte>("ReceiveUseCodeResult", result =>
 {
-    Console.WriteLine($"Use Code Result: {result.Result}");
+    Console.WriteLine($"Use Code Result: {(UseCodeResultDTO)result}");
 });
 
 try
@@ -35,7 +31,6 @@ catch (Exception ex)
     return;
 }
 
-// Command loop
 while (true)
 {
     Console.WriteLine("\nEnter command:");
@@ -47,27 +42,40 @@ while (true)
 
     if (input == "1")
     {
-        Console.Write("Enter count: ");
-        if (ushort.TryParse(Console.ReadLine(), out var count))
-        {
-            try
-            {
-                await connection.InvokeAsync("GenerateCode", count);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-        }
-        else
+        Console.Write("Enter count (1000–2000): ");
+        if (!ushort.TryParse(Console.ReadLine(), out var count))
         {
             Console.WriteLine("Invalid count.");
+            continue;
+        }
+
+        Console.Write("Enter code length (7 or 8): ");
+        if (!byte.TryParse(Console.ReadLine(), out var length) || (length != 7 && length != 8))
+        {
+            Console.WriteLine("Invalid length. Must be 7 or 8.");
+            continue;
+        }
+
+        try
+        {
+            await connection.InvokeAsync("GenerateCode", count, length);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
     else if (input == "2")
     {
         Console.Write("Enter code to use: ");
-        var code = Console.ReadLine();
+        var code = Console.ReadLine()?.Trim();
+
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            Console.WriteLine("Code cannot be empty.");
+            continue;
+        }
+
         try
         {
             await connection.InvokeAsync("UseCode", code);
@@ -89,3 +97,4 @@ while (true)
 
 Console.WriteLine("Exiting...");
 await connection.StopAsync();
+

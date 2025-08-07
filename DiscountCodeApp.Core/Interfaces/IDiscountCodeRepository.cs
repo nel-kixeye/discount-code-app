@@ -1,9 +1,10 @@
-﻿using DiscountCodeApp.Core.Models;
+﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.Core.Models;
 
 namespace DiscountCodeApp.Core.Interfaces;
 public interface IDiscountCodeRepository
 {
     Task<IEnumerable<DiscountCode>> GetAllCodesAsync();
     Task SaveCodesAsync(IEnumerable<DiscountCode> codes);
-    Task<bool> MarkCodeAsUsedAsync(string code);
+    Task<UseCodeResultDTO> MarkCodeAsUsedAsync(string code);
 }

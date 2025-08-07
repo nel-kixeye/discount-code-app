@@ -1,5 +1,9 @@
-﻿using DiscountCodeApp.Core.Models;
+﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.Core.Models;
+using DiscountCodeApp.Core.Services;
 using DiscountCodeApp.Infrastructure.Repository;
+using Moq;
+using System.Text.Json;
 
 namespace DiscountCodeApp.Test;
 public class DiscountCodeRepositoryTest : IDisposable
@@ -60,19 +64,38 @@ public class DiscountCodeRepositoryTest : IDisposable
 
         var result = await _repository.MarkCodeAsUsedAsync("USED999");
 
-        Assert.True(result);
+        Assert.Equal(UseCodeResultDTO.Success, result);
 
         var allCodes = (await _repository.GetAllCodesAsync()).ToList();
         Assert.Single(allCodes);
         Assert.True(allCodes[0].IsUsed);
         Assert.True(allCodes[0].UpdatedAt > now);
+
     }
 
     [Fact]
-    public async Task MarkCodeAsUsedAsync_ShouldReturnFalse_WhenCodeNotFound()
+    public async Task MarkCodeAsUsedAsync_ShouldReturnNotFound()
     {
         var result = await _repository.MarkCodeAsUsedAsync("INVALID");
-        Assert.False(result);
+        Assert.Equal(UseCodeResultDTO.NotFound, result);
+    }
+
+    [Fact]
+    public async Task MarkCodeAsUsedAsync_ShouldReturnUsed()
+    {
+        var code = "USED123";
+        var now = DateTime.UtcNow;
+        var codes = new List<DiscountCode>
+        {
+            new() { Code = code, IsUsed = true, CreatedAt = now, UpdatedAt = now }
+        };
+
+        var json = JsonSerializer.Serialize(codes);
+        await File.WriteAllTextAsync(_tempFile, json);
+
+        var result = await _repository.MarkCodeAsUsedAsync(code);
+
+        Assert.Equal(UseCodeResultDTO.Used, result);
     }
 
     [Fact]

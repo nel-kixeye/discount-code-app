@@ -1,4 +1,5 @@
-﻿using DiscountCodeApp.Core.Interfaces;
+﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.Core.Interfaces;
 using DiscountCodeApp.Helpers;
 using Microsoft.AspNetCore.SignalR;
 
@@ -8,11 +9,12 @@ public class DiscountHub(IGenerateCodeService generateCodeService) : Hub
 {
     private readonly IGenerateCodeService _generateCodeService = generateCodeService;
 
-    public async Task GenerateCode(ushort count) 
+    public async Task GenerateCode(ushort count, byte length) 
     {
         try
         {
-            var result = await _generateCodeService.GenerateCodesAsync(count);
+            var codes = await _generateCodeService.GenerateCodesAsync(count,length);
+            var result = codes.Codes.Count > 0 ? true : false;
             await Clients.Caller.SendAsync("ReceiveGeneratedCodes", result);
         }
         catch (ArgumentException ex)
@@ -27,13 +29,25 @@ public class DiscountHub(IGenerateCodeService generateCodeService) : Hub
 
     public async Task UseCode(string code) 
     {
+        if (code == null) 
+        {
+            throw new ArgumentNullException("Null code");
+        }
+
+        code = code.Trim();
+        if (code.Length < 7 || code.Length > 8) 
+        {
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)UseCodeResultDTO.InvalidLength);
+            return;
+        }
+
         try
         {
             if (string.IsNullOrWhiteSpace(code))
                 HubExceptionHelpers.Throw("Code cannot be empty.");
 
             var result = await _generateCodeService.UseCodeAsync(code);
-            await Clients.Caller.SendAsync("ReceiveUseCodeResult", result);
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)result);
         }
         catch (KeyNotFoundException ex)
         {

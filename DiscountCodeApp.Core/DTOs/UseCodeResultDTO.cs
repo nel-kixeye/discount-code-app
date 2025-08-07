@@ -1,5 +1,8 @@
 ﻿namespace DiscountCodeApp.Core.DTOs;
-public class UseCodeResultDTO
+public enum UseCodeResultDTO
 {
-    public bool Result { get; set; }
+    Success = 0x00,
+    Used = 0x01,
+    InvalidLength = 0x02,
+    NotFound = 0x03,
 }

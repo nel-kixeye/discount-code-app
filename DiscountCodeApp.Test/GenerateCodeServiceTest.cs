@@ -22,6 +22,7 @@ public class GenerateCodeServiceTest
     public async Task GenerateCodesAsync_ShouldGenerate1000UniqueCodes()
     {
         var count = 1000;
+        byte length = 0x08;
         var fakeCodes = Enumerable.Range(0, count)
                                    .Select(i => $"CODE{i:D4}")
                                    .ToArray();
@@ -33,7 +34,7 @@ public class GenerateCodeServiceTest
         _generatorMock.Setup(g => g.Generate(8))
                       .Returns(() => fakeCodes[index++]);
 
-        var result = await _service.GenerateCodesAsync((ushort)count);
+        var result = await _service.GenerateCodesAsync((ushort)count,length);
 
         Assert.Equal(count, result.Codes.Count());
         Assert.All(result.Codes, code => Assert.Contains(code, fakeCodes));
@@ -44,17 +45,19 @@ public class GenerateCodeServiceTest
     public async Task GenerateCodesAsync_ShouldThrowIfCountIsTooLow()
     {
         var lowCount = 3;
+        byte length = 0x08;
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.GenerateCodesAsync((ushort)lowCount));
+            _service.GenerateCodesAsync((ushort)lowCount, length));
     }
 
     [Fact]
     public async Task GenerateCodesAsync_ShouldThrowIfCountExcedes()
     {
         var lowCount = 4000;
+        byte length = 0x08;
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.GenerateCodesAsync((ushort)lowCount));
+            _service.GenerateCodesAsync((ushort)lowCount, length));
     }
 }

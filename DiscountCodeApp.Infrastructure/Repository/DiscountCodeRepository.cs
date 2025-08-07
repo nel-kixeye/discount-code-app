@@ -1,4 +1,5 @@
-﻿using DiscountCodeApp.Core.Interfaces;
+﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.Core.Interfaces;
 using DiscountCodeApp.Core.Models;
 using System.Text.Json;
 
@@ -39,7 +40,7 @@ public class DiscountCodeRepository : IDiscountCodeRepository
         }
     }
 
-    public async Task<bool> MarkCodeAsUsedAsync(string code)
+    public async Task<UseCodeResultDTO> MarkCodeAsUsedAsync(string code)
     {
         await _lock.WaitAsync();
         try
@@ -47,16 +48,23 @@ public class DiscountCodeRepository : IDiscountCodeRepository
             var allCodes = await ReadAllCodesUnsafeAsync();
 
             var list = allCodes.ToList();
-            var target = list.FirstOrDefault(c => c.Code == code && !c.IsUsed);
+            var target = list.FirstOrDefault(c => c.Code == code);
 
-            if (target == null)
-                return false;
+            if (target == null) 
+            {
+                return UseCodeResultDTO.NotFound;
+            }
+
+            if (target.IsUsed) 
+            {
+                return UseCodeResultDTO.Used;
+            }
 
             target.IsUsed = true;
             target.UpdatedAt = DateTime.UtcNow;
 
             await SaveCodesUnsafeAsync(list);
-            return true;
+            return UseCodeResultDTO.Success;
         }
         finally
         {
