@@ -1,12 +1,10 @@
-﻿using DiscountCodeApp.Core.Interfaces;
+﻿using DiscountCodeApp.Core.Helpers;
+using DiscountCodeApp.Core.Interfaces;
 using System.Security.Cryptography;
 
 namespace DiscountCodeApp.Infrastructure.Generator;
 public class CodeGenerator : ICodeGenerator
 {
-    private static readonly char[] _charPool =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
-
     public string Generate(int length)
     {
         var code = new char[length];
@@ -18,7 +16,7 @@ public class CodeGenerator : ICodeGenerator
         {
             rng.GetBytes(buffer);
             uint num = BitConverter.ToUInt32(buffer, 0);
-            code[i] = _charPool[num % _charPool.Length];
+            code[i] = Collections.charpool[num % Collections.charpool.Length];
         }
 
         return new string(code);

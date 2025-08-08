@@ -1,7 +1,10 @@
 ﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.Core.Helpers;
 using DiscountCodeApp.Core.Interfaces;
+using DiscountCodeApp.DTOs;
 using DiscountCodeApp.Helpers;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.RegularExpressions;
 
 namespace DiscountCodeApp.Hubs;
 
@@ -29,25 +32,35 @@ public class DiscountHub(IGenerateCodeService generateCodeService) : Hub
 
     public async Task UseCode(string code) 
     {
-        if (code == null) 
+        if (string.IsNullOrWhiteSpace(code))
         {
-            throw new ArgumentNullException("Null code");
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)HubResultEnum.NullCode);
+            return;
         }
 
-        code = code.Trim();
-        if (code.Length < 7 || code.Length > 8) 
+        var trimmedCode = code.Trim();
+        if (trimmedCode.Any(char.IsWhiteSpace))
         {
-            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)UseCodeResultDTO.InvalidLength);
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)HubResultEnum.WhitespaceDetected);
+            return;
+        }
+
+        if (trimmedCode.Any(x => !Collections.charpool.Contains(x))) 
+        {
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)HubResultEnum.InvalidCharacter);
+            return;
+        }
+
+        if (trimmedCode.Length < 7 || trimmedCode.Length > 8) 
+        {
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)HubResultEnum.InvalidLength);
             return;
         }
 
         try
         {
-            if (string.IsNullOrWhiteSpace(code))
-                HubExceptionHelpers.Throw("Code cannot be empty.");
-
             var result = await _generateCodeService.UseCodeAsync(code);
-            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)result);
+            await Clients.Caller.SendAsync("ReceiveUseCodeResult", (byte)MapUseCodeResult(result));
         }
         catch (KeyNotFoundException ex)
         {
@@ -58,4 +71,13 @@ public class DiscountHub(IGenerateCodeService generateCodeService) : Hub
             throw HubExceptionHelpers.Wrap(ex, "Failed to apply discount code.");
         }
     }
+
+    private static HubResultEnum MapUseCodeResult(UseCodeResultDTO useCodeResult) => useCodeResult switch
+    {
+        UseCodeResultDTO.Success => HubResultEnum.Success,
+        UseCodeResultDTO.Used => HubResultEnum.Used,
+        UseCodeResultDTO.NotFound => HubResultEnum.NotFound,
+        _ => HubResultEnum.NotFound,
+    };
+    
 }

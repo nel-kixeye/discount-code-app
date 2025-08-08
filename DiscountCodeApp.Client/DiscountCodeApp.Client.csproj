@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DiscountCodeApp.Core\DiscountCodeApp.Core.csproj" />
     <ProjectReference Include="..\DiscountCodeApp.Infrastructure\DiscountCodeApp.Infrastructure.csproj" />
+    <ProjectReference Include="..\DiscoutCodeApp\DiscountCodeApp.csproj" />
   </ItemGroup>
 
 </Project>

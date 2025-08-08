@@ -1,4 +1,5 @@
 ﻿using DiscountCodeApp.Core.DTOs;
+using DiscountCodeApp.DTOs;
 using Microsoft.AspNetCore.SignalR.Client;
 
 Console.WriteLine("Starting Discount Code Client...");
@@ -17,7 +18,7 @@ connection.On<bool>("ReceiveGeneratedCodes", result =>
 
 connection.On<byte>("ReceiveUseCodeResult", result =>
 {
-    Console.WriteLine($"Use Code Result: {(UseCodeResultDTO)result}");
+    Console.WriteLine($"Use Code Result: {(HubResultEnum)result}");
 });
 
 try
